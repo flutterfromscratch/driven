@@ -82,7 +82,7 @@ extension Folder on drive.DriveApi {
 
   /// Copies a local filesystem folder to Google Drive. Mimetypes are interpreted from the files
   /// Specify a destinationDirectory to use. Cannot copy to root of drive.
-  Stream<FolderPushProgress> pushFolder(final Directory directory, final String destinationDirectory, {final int parallel = 5}) async* {
+  Stream<FolderPushProgress> pushFolder(final Directory directory, final String destinationDirectory) async* {
     int fileCount = 0;
     final rootPath = directory.path;
 
@@ -140,11 +140,6 @@ extension Folder on drive.DriveApi {
       depth++;
     }
     return folderIds;
-  }
-
-  Future<drive.FileList> getDriveRoot() async {
-    final driveRoot = await files.list(corpora: 'user');
-    return driveRoot;
   }
 }
 
