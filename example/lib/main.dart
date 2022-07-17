@@ -58,6 +58,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _driven = Driven(iAcceptTheRisksOfUsingDriven: true);
+  String? statusUpdate;
 
   @override
   void initState() {
@@ -110,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Navigator.of(context).pop();
                     });
                   },
-                  child: Text('SIGN INTO GOOGLE SERVICES'),
+                  child: const Text('SIGN INTO GOOGLE SERVICES'),
                 ),
               if (account.data != null)
                 Column(
@@ -142,7 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           showLoading(context);
                           _driven.signOut().then((value) => Navigator.of(context).pop());
                         },
-                        child: Text('SIGN OUT')),
+                        child: const Text('SIGN OUT')),
                     ElevatedButton(
                       onPressed: () {
                         showDialog<String>(
@@ -150,25 +151,28 @@ class _MyHomePageState extends State<MyHomePage> {
                             builder: (builder) {
                               String path = "";
                               return AlertDialog(
-                                title: Text('Create a new folder'),
+                                title: const Text('Create a new folder'),
                                 content: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text('What path should we create? It must be a path/like/this.'),
+                                    const Text('What path should we create? It must be a path/like/this.'),
                                     TextField(
                                       onChanged: (newPath) => path = newPath,
                                     ),
                                     ElevatedButton(
-                                      child: Text('CREATE'),
+                                      child: const Text('CREATE'),
                                       onPressed: () {
                                         showLoading(context);
 
-                                        _driven.createFolderPath(path).then((value) => Navigator.of(context).pop()).onError((error, stackTrace) {
+                                        drive.DriveApi(GoogleAuthClient())
+                                            .createFoldersRecursively(path)
+                                            .then((value) => Navigator.of(context).pop())
+                                            .onError((error, stackTrace) {
                                           Navigator.pop(context);
                                           showDialog(
                                               context: context,
                                               builder: (context) => AlertDialog(
-                                                    title: Text('Error'),
+                                                    title: const Text('Error'),
                                                     content: Text(error.toString()),
                                                   ));
                                         });
@@ -182,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                         // drive.DriveApi().files.create(request)
                       },
-                      child: Text('CREATE A FOLDER'),
+                      child: const Text('CREATE A FOLDER'),
                     ),
                     ElevatedButton(
                       onPressed: () async {
@@ -192,18 +196,18 @@ class _MyHomePageState extends State<MyHomePage> {
                             String? filePath;
                             String? fileContents;
                             return AlertDialog(
-                              title: Text('Create a text file'),
+                              title: const Text('Create a text file'),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   TextField(
-                                    decoration: InputDecoration(hintText: 'File Path on Google Drive (like /path/to/file.txt)'),
+                                    decoration: const InputDecoration(hintText: 'File Path on Google Drive (like /path/to/file.txt)'),
                                     onChanged: (val) {
                                       filePath = val;
                                     },
                                   ),
                                   TextField(
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                       hintText: 'Contents of file',
                                     ),
                                     onChanged: (val) {
@@ -215,7 +219,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         if (filePath == null || fileContents == null) {
                                           showDialog(
                                               context: context,
-                                              builder: (context) => AlertDialog(
+                                              builder: (context) => const AlertDialog(
                                                     title: Text('Please fill out the fields.'),
                                                   ));
                                         } else {
@@ -225,56 +229,96 @@ class _MyHomePageState extends State<MyHomePage> {
                                           await drive.DriveApi(GoogleAuthClient()).pushFile(file, filePath!); // already checked for null
                                         }
                                       },
-                                      child: Text('CREATE FILE')),
+                                      child: const Text('CREATE FILE')),
                                 ],
                               ),
                             );
                           },
                         );
                       },
-                      child: Text('CREATE A PLAIN TEXT FILE'),
+                      child: const Text('CREATE A PLAIN TEXT FILE'),
                     ),
                     ElevatedButton(
                       onPressed: () async {
                         showDialog(
                           context: context,
                           builder: (context) => SimpleDialog(
-                            contentPadding: EdgeInsets.all(20),
-                            title: Text('Create a folder with contents'),
+                            contentPadding: const EdgeInsets.all(20),
+                            title: const Text('Create a folder with contents'),
                             children: [
-                              Text(
+                              const Text(
                                   'This will create a folder on your local device with some files in it, and then send that folder to Google Drive.'),
                               ElevatedButton(
                                 onPressed: () async {
                                   final tempDirectory = await getTemporaryDirectory();
                                   final tempPath = (await tempDirectory.createTemp()).path;
                                   for (int i = 0; i < 10; i++) {
-                                    final newDir = Directory('$tempPath/${i.toString()}/${i.toString()}/${i.toString()}/${i.toString()}');
+                                    final newDir = Directory('$tempPath/Driven Test/${i.toString()}/${i.toString()}/${i.toString()}/${i.toString()}');
                                     await newDir.create(recursive: true);
                                     final testFile = File('${newDir.path}/testfile.txt');
                                     await testFile.writeAsString('Its just test content.');
                                     print('created test file ${testFile.path} with some content.');
                                   }
-
                                   final created =
                                       await drive.DriveApi(GoogleAuthClient()).pushFolder(Directory(tempPath), 'Driven Folder Test').toList();
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(
-                                      title: Text('Created some files and folders.'),
+                                      title: const Text('Created some files and folders.'),
                                       content: Text(
                                         created.last.toString(),
                                       ),
                                     ),
                                   );
                                 },
-                                child: Text('MAKE IT SO'),
+                                child: const Text('MAKE IT SO'),
                               )
                             ],
                           ),
                         );
                       },
-                      child: Text('CREATE AND COPY FOLDER'),
+                      child: const Text('CREATE AND COPY FOLDER'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final localStorage = await getApplicationDocumentsDirectory();
+                        final remoteFolderIds = await drive.DriveApi(GoogleAuthClient()).getFolderPathAsIds('Driven Test');
+                        final localFolder = await Directory(localStorage.path + '/Driven Test').create();
+                        if (remoteFolderIds.last.id == null) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const SimpleDialog(
+                              title: Text('Please create a folder called "Driven Test" on remote first.'),
+                            ),
+                          );
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return SimpleDialog(
+                                children: [
+                                  const Text('Copying to local...'),
+                                  StreamBuilder<FolderTransferProgress>(
+                                    builder: (context, progress) {
+                                      if (progress.hasData) {
+                                        return Text(progress.data!.status.name);
+                                      } else {
+                                        return Text('Waiting...');
+                                      }
+                                    },
+                                    stream: drive.DriveApi(GoogleAuthClient()).receiveFolder(remoteFolderIds.last.id!, localFolder),
+                                  )
+                                ],
+                              );
+                            },
+                          );
+                        }
+
+                        // await for (final update in drive.DriveApi(GoogleAuthClient()).receiveFolder(remoteFolderIds.first.id!, localFolder)) {
+                        //
+                        // }
+                      },
+                      child: const Text('COPY FOLDER FROM REMOTE TO LOCAL'),
                     )
                   ],
                 )
@@ -289,10 +333,10 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
         context: context,
         builder: (context) => Center(
-              child: Card(
+              child: const Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(),
+                  padding: EdgeInsets.all(32.0),
+                  child: const CircularProgressIndicator(),
                 ),
               ),
             ));

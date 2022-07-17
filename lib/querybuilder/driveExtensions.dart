@@ -8,7 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 
 import '../driven.dart';
-import 'FileOperation.dart';
+import 'shared.dart';
+import 'package:path/path.dart' as p;
 
 extension Folder on drive.DriveApi {
   /// Creates a folder, and returns the Google Drive File type.
@@ -82,7 +83,7 @@ extension Folder on drive.DriveApi {
 
   /// Copies a local filesystem folder to Google Drive. Mimetypes are interpreted from the files
   /// Specify a destinationDirectory to use. Cannot copy to root of drive.
-  Stream<FolderPushProgress> pushFolder(final Directory directory, final String destinationDirectory) async* {
+  Stream<FolderTransferProgress> pushFolder(final Directory directory, final String destinationDirectory) async* {
     int fileCount = 0;
     final rootPath = directory.path;
 
@@ -91,11 +92,49 @@ extension Folder on drive.DriveApi {
     await for (final file in directory.list(recursive: true).where((event) => event.statSync().type == FileSystemEntityType.file)) {
       fileCount++;
       final remotePath = '$destinationDirectory/${file.path.substring(rootPath.length)}';
-      yield FolderPushProgress(FolderPushStatus.sending, path: file.path, copiedFiles: fileCount, totalCount: totalFileCount);
+      yield FolderTransferProgress(FolderPushStatus.sending, path: file.path, copiedFiles: fileCount, totalCount: totalFileCount);
       // todo keep track of folders we have already created, so we don't recheck these folders needlessly
       await pushFile(File(file.path), remotePath);
     }
-    yield FolderPushProgress(FolderPushStatus.completed);
+    yield FolderTransferProgress(FolderPushStatus.completed);
+  }
+
+  /// Retrieves a folder from a Google Drive location to the local device
+  /// If the remote folder does not exist, function will throw
+  Stream<FolderTransferProgress> receiveFolder(String remoteFolderId, final Directory localDirectory) async* {
+    print('Copying ID ${remoteFolderId} to ${localDirectory.path}...');
+    final filesInFolder = await files.list(q: GoogleDriveQueryHelper.fileListQuery(remoteFolderId));
+    if (filesInFolder.files != null) {
+      for (final entity in filesInFolder.files!) {
+        // Could either be a file or a folder
+        if (entity.mimeType == MimeType.folder) {
+          final childDirectory = Directory(p.join(localDirectory.path, entity.name));
+          if (!(await childDirectory.exists())) {
+            await childDirectory.create(recursive: true);
+          }
+          if (entity.id == null) {
+            print('ID of found google drive folder is null? This is a bug, please open a bug report');
+          } else {
+            print('Found ${entity.name} folder, (ID: ${entity.id}). Recursively copying.');
+            yield* receiveFolder(entity.id!, childDirectory);
+          }
+        } else {
+          print('Processing file copy for ${entity.name} (with mimetype of ${entity.mimeType}, copying to directory ${localDirectory.path}');
+          final file = await files.get(entity.id!, downloadOptions: drive.DownloadOptions.fullMedia);
+          if (file is drive.Media) {
+            final filePath = p.join(localDirectory.path, entity.name);
+            final destinationFile = File(filePath);
+            await for (final bytes in file.stream) {
+              // calling append on a nonexistant file creates that file.
+              destinationFile.writeAsBytes(bytes, mode: FileMode.append);
+            }
+          } else {
+            print("WARNING: Received a file that wasn't of type media. Instead, it was of type ${file.runtimeType.toString()}");
+          }
+        }
+      }
+    }
+    // final folderIdTree = ['root', ...remoteFolderIds.map((e) => e.id)];
   }
 
   /// Converts a folder path, like, "path/like/this" to a set of folder id's.
@@ -158,9 +197,15 @@ class GoogleDriveQueryHelper {
     print('Prepared query: $query');
     return query;
   }
+
+  static String fileListQuery(final String folderId) {
+    final query = "'$folderId' in parents and trashed = false";
+    print('Prepared query: $query');
+    return query;
+  }
 }
 
-class FolderPushProgress {
+class FolderTransferProgress {
   final String? path;
   final int? totalCount;
   final int? copiedFiles;
@@ -168,7 +213,7 @@ class FolderPushProgress {
   final List<String>? successfulCopies;
   final Map<String, Exception>? errorCopies;
 
-  FolderPushProgress(
+  FolderTransferProgress(
     this.status, {
     this.path,
     this.totalCount,

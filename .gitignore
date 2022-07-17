@@ -32,3 +32,4 @@ example/ios/GoogleService-Info.plist
 example/ios/firebase_app_id_file.json
 example/lib/firebase_options.dart
 **/firebase_app_id_file.json
+.flutter-plugins-dependencies

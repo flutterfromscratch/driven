@@ -61,20 +61,10 @@ class Driven {
 
     return _credential.currentUser!; // the user is signed in, so we are guarenteed a non-null user object.
   }
-
-  Future<List<FolderPathBit>> createFolderPath(final String path) async {
-    final pathBits = await drive.DriveApi(GoogleAuthClient()).createFoldersRecursively(path);
-    return pathBits;
-  }
 }
 
 class GoogleAuthClient extends http.BaseClient {
-  // final Map<String, String> _headers;
-
   final http.Client _client = http.Client();
-
-  // GoogleAuthClient(this._headers);
-
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final signedIn = await _credential.isSignedIn();
@@ -86,9 +76,6 @@ class GoogleAuthClient extends http.BaseClient {
       throw 'User not authenticated';
     }
     return _client.send(request..headers.addAll(await authenticatedUser!.authHeaders));
-    // if (signedIn) {
-    //   return _client.send(request..headers.addAll(_headers));
-    // }
   }
 }
 
@@ -100,24 +87,14 @@ enum LocateFolderResult {
   partialDepth,
 }
 
-// class FolderCreationRequest {
-//   final String pathRequested;
-//   final Map<String, String> pathsCreated;
-//   final bool successful;
-//
-//   FolderCreationRequest(this.pathRequested, this.pathsCreated, this.successful);
-// }
-
 class FolderPathBit {
   final String name;
   final String? id;
   final int depth;
-  // final bool exists;
 
   FolderPathBit(
     this.name,
     this.id,
     this.depth,
-    // this.exists,
   );
 }
