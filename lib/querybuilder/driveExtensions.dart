@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:driven/tools/md5.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart' as googleAuth;
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -58,14 +59,27 @@ extension Folder on drive.DriveApi {
       containingFolderId = foldersId.last.id;
     }
     final fileName = path.contains('/') ? path.split('/').last : path;
-    final driveFile = drive.File(
-      name: fileName,
-      mimeType: mimeType ?? lookupMimeType(fileName),
-      parents: containingFolderId == null ? [] : [containingFolderId],
-      appProperties: {
-        'one': 'two',
-      },
+
+    final existingFileQuery = QueryBuilder.fileQuery(
+      fileName,
+      mimeType: lookupMimeType(path),
     );
+
+    final existingFileData = await files.list(
+      q: existingFileQuery,
+      $fields: 'files(kind,id,name,mimeType,md5Checksum)',
+    );
+
+    if (existingFileData.files!.isNotEmpty) {
+      final remoteMd5 = existingFileData.files?.first.md5Checksum;
+      final localMd5 = await getMD5(file.path);
+      if (remoteMd5 == localMd5) {
+        print('Remote file is the same, not pushing file.');
+        return existingFileData.files!.first;
+      }
+    }
+    final driveFile =
+        drive.File(name: fileName, mimeType: mimeType ?? lookupMimeType(fileName), parents: containingFolderId == null ? [] : [containingFolderId]);
 
     final length = await file.length();
     final fileContents = file.openRead();
@@ -77,7 +91,6 @@ extension Folder on drive.DriveApi {
             length,
           ),
         );
-
     return destinationFile;
   }
 

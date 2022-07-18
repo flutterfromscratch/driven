@@ -39,7 +39,6 @@ dependencies:
   firebase_core: ^1.19.1
   firebase_auth: ^3.4.1
   path_provider:
-  queue:
 
 dev_dependencies:
   flutter_test:

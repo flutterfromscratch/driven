@@ -11,10 +11,12 @@ dependencies:
   flutter:
     sdk: flutter
   googleapis: ^9.1.0
-  google_sign_in: ^5.3.3
+  google_sign_in: ^5.4.0
   http: ^0.13.4
   mime: ^1.0.2
   path: ^1.8.1
+  crypto: ^3.0.2
+  hex: ^0.2.0
 #  queue:
 
 dev_dependencies:
