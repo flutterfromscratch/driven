@@ -31,7 +31,7 @@ jobs:
         with:
           valueFile: 'pubspec.yaml'
           propertyPath: 'version'
-          value: 0.0.${{github.run_number}}
+          value: 0.1.${{github.run_number}}
           commitChange: false
           updateFile: true
       - name: Write File
