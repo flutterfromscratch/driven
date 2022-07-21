@@ -211,15 +211,10 @@ class GoogleDriveQueryHelper {
     return query;
   }
 
-  /// Lists all files in a defined Google Drive folder.
   static String fileListQuery(final String folderId) {
     final query = "'$folderId' in parents and trashed = false";
     print('Prepared query: $query');
     return query;
-  }
-
-  static String allFilesQuery({final bool trashed = false}) {
-    return "trashed = $trashed";
   }
 }
 
