@@ -35,14 +35,39 @@ class MimeType {
   static const folder = "application/vnd.google-apps.folder";
 }
 
-class FileDetail {
-  final String name;
-  final int bytes;
-  final DateTime lastModified;
-  final String md5;
+// file sync below, not implemented yet.
 
-  FileDetail(this.name, this.bytes, this.lastModified, this.md5);
-}
+//
+// class FileDetail {
+//   final String name;
+//   final int bytes;
+//   final DateTime lastModified;
+//   final String md5;
+//
+//   FileDetail(this.name, this.bytes, this.lastModified, this.md5);
+// }
+//
+// class LocalRemoteDifference {
+//   final FileDetail local;
+//   final FileDetail remote;
+//   final String? remoteFolderId;
+//   final String localPath;
+//
+//   final EntityType type;
+//   final ChangeType change;
+//
+//   LocalRemoteDifference(this.local, this.remote, this.type, this.change, this.localPath, {this.remoteFolderId});
+// }
+//
+// enum EntityType {
+//   file,
+//   folder,
+// }
+//
+// enum ChangeType {
+//   differentHash,
+//   notOnRemote,
+// }
 
 // class CopyOptions {
 //   final Function(FileDetail localFile, FileDetail remoteFile) onExisting;
